@@ -1,6 +1,16 @@
 [workspace]
 resolver = "3"
 
-members = [
-"module-01-intro"
-]
+members = ["module-01-intro"]
+
+# Shared dependencies across all modules
+[workspace.dependencies]
+# Core Axum Framework
+axum = "0.8.8"
+axum-extra = { version = "0.10", features = [
+    "typed-header",
+    "query",
+    "multipart",
+] }
+
+tokio = { version = "1.42", features = ["full"] }
