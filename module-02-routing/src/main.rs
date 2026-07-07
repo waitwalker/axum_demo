@@ -83,7 +83,7 @@ fn user_routes() -> Router {
         .route("/", get(list_users).post(create_user))
         .route(
             "/{id}",
-            get(list_users)
+            get(get_user)
                 .put(update_user)
                 .patch(patch_user)
                 .delete(delete_user),
