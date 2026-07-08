@@ -45,11 +45,49 @@ struct CreateUserResponse {
     email: String,
 }
 
-async fn create_user(Json(payload):Json<CreateUserRequest>) -> Json<CreateUserResponse> {
-    Json(CreateUserResponse { id: 1, name: payload.name, email: payload.email })
+async fn create_user(Json(payload): Json<CreateUserRequest>) -> Json<CreateUserResponse> {
+    Json(CreateUserResponse {
+        id: 1,
+        name: payload.name,
+        email: payload.email,
+    })
 }
 
+async fn show_headers(headers: HeaderMap) -> String {
+    let user_agent = headers
+        .get("user-agent")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("Unkonwn");
 
+    let content_type = headers
+        .get("content-type")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("Not specified");
+    format!(
+        "User-Agent:{} \n Content-Type: {}",
+        user_agent, content_type
+    )
+}
+
+// 请求体（Raw body）提取器
+async fn raw_body(body: Bytes) -> String {
+    format!("Received {} bytes", body.len())
+}
+
+async fn combined_extractors(
+    Path(id): Path<u64>,
+    Query(params): Query<ListParams>,
+    headers: HeaderMap,
+    Json(body): Json<CreateUserRequest>,
+) -> String {
+    format!(
+        "ID: {}\nPage: {:?}\nUser-Agent: {:?}\nName: {}",
+        id,
+        params.page,
+        headers.get("user-agent"),
+        body.name
+    )
+}
 
 fn main() {
     println!("Hello, world!");
