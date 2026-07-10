@@ -89,6 +89,52 @@ async fn combined_extractors(
     )
 }
 
+async fn optional_query(Query(params): Query<Option<ListParams>>) -> String {
+    match params {
+        Some(p) => format!("Got params: page={:?}", p.page),
+        None => "No query params provided".to_string(),
+    }
+}
+
+struct ApiKey(String);
+
+#[derive(Debug)]
+struct ApiKeyError;
+
+impl IntoResponse for ApiKeyError {
+    fn into_response(self) -> Response {
+        (
+            StatusCode::UNAUTHORIZED,
+            "Missiing or invalid API key. Provide X-API-Key header",
+        )
+            .into_response()
+    }
+}
+
+impl<S> FromRequestParts<S> for ApiKey
+where
+    S: Send + Sync,
+{
+    type Rejection = ApiKeyError;
+    fn from_request_parts(
+        parts: &mut Parts,
+        _state: &S,
+    ) -> impl std::future::Future<Out = Result<Self, self::Rejection>> + Send {
+        let api_key = parts
+            .headers
+            .get("x-api-key")
+            .and_then(|v| v.to_str().ok())
+            .map(|s| s.to_string());
+
+        async move {
+            match api_key {
+                Some(key) if !key.is_empty() => Ok(ApiKey(key)),
+                _ => Err(ApiKeyError),
+            }
+        }
+    }
+}
+
 fn main() {
     println!("Hello, world!");
 }
