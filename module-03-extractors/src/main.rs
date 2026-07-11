@@ -119,7 +119,7 @@ where
     fn from_request_parts(
         parts: &mut Parts,
         _state: &S,
-    ) -> impl std::future::Future<Out = Result<Self, self::Rejection>> + Send {
+    ) -> impl std::future::Future<Output = Result<Self, Self::Rejection>> + Send {
         let api_key = parts
             .headers
             .get("x-api-key")
@@ -132,6 +132,44 @@ where
                 _ => Err(ApiKeyError),
             }
         }
+    }
+}
+
+async fn protected_endpoint(ApiKey(key): ApiKey) -> String {
+    format!("Access granted! Your API key: {}", key)
+}
+
+// 一个验证 JSON 请求体的自定义提取器
+#[derive(Debug, Deserialize)]
+struct ValidatedUser {
+    name: String,
+    email: String,
+}
+
+struct ValidatedJson<T>(T);
+
+#[derive(Debug)]
+enum ValidationError {
+    InvalidJson(String),
+    InvalidEmail,
+    NameTooShort,
+}
+
+impl IntoResponse for ValidationError {
+    fn into_response(self) -> Response {
+        let (status, message) = match self {
+            ValidationError::InvalidJson(value) => {
+                (StatusCode::BAD_REQUEST, format!("Inavlid JSON: {}", value))
+            }
+            ValidationError::InvalidEmail => {
+                (StatusCode::BAD_REQUEST, "Inavlid email format".to_string())
+            }
+            ValidationError::NameTooShort => (
+                StatusCode::BAD_REQUEST,
+                "Name must be at least 2 characters".to_string(),
+            ),
+        };
+        (status, message).into_response()
     }
 }
 
