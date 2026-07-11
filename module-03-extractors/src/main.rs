@@ -173,6 +173,61 @@ impl IntoResponse for ValidationError {
     }
 }
 
-fn main() {
+impl<S> FromRequest<S> for ValidatedJson<ValidatedUser>
+where
+    S: Send + Sync,
+{
+    type Rejection = ValidationError;
+
+    fn from_request(
+        req: Request,
+        state: &S,
+    ) -> impl std::future::Future<Output = Result<Self, Self::Rejection>> + Send {
+        async move {
+            let Json(user): Json<ValidatedUser> = Json::from_request(req, state)
+                .await
+                .map_err(|e| ValidationError::InvalidJson(e.to_string()))?;
+
+            if user.name.len() < 2 {
+                return Err(ValidationError::NameTooShort);
+            }
+
+            if !user.email.contains("@") {
+                return Err(ValidationError::InvalidEmail);
+            }
+
+            Ok(ValidatedJson(user))
+        }
+    }
+}
+
+async fn create_validated_user(ValidatedJson(user): ValidatedJson<ValidatedUser>) -> String {
+    format!("Created user: {} <{}>", user.name, user.email)
+}
+
+#[derive(Clone)]
+struct AppState {
+    db_pool: String,
+    api_version: String,
+}
+
+async fn with_state(State(state): State<Arc<AppState>>) -> String {
+    format!("API Version: {}, DB: {}", state.api_version, state.db_pool)
+}
+
+#[tokio::main]
+async fn main() {
     println!("Hello, world!");
+
+    let state = Arc::new(AppState {
+        db_pool: "postgres://localhost/mydb".to_string(),
+        api_version: "v1.0.0".to_string(),
+    });
+
+    let router: Router = Router::new()
+        .route("/user/{id}", get(get_user))
+        .route("/user", get(list_users).post(create_user))
+        .route("/headers", get(show_headers))
+        .route("/raw", post(raw_body))
+        .with_state(state);
 }
