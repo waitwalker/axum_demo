@@ -57,7 +57,7 @@ async fn show_headers(headers: HeaderMap) -> String {
     let user_agent = headers
         .get("user-agent")
         .and_then(|v| v.to_str().ok())
-        .unwrap_or("Unkonwn");
+        .unwrap_or("Unknown");
 
     let content_type = headers
         .get("content-type")
@@ -105,7 +105,7 @@ impl IntoResponse for ApiKeyError {
     fn into_response(self) -> Response {
         (
             StatusCode::UNAUTHORIZED,
-            "Missiing or invalid API key. Provide X-API-Key header",
+            "Missing or invalid API key. Provide X-API-Key header",
         )
             .into_response()
     }
@@ -159,10 +159,10 @@ impl IntoResponse for ValidationError {
     fn into_response(self) -> Response {
         let (status, message) = match self {
             ValidationError::InvalidJson(value) => {
-                (StatusCode::BAD_REQUEST, format!("Inavlid JSON: {}", value))
+                (StatusCode::BAD_REQUEST, format!("Invalid JSON: {}", value))
             }
             ValidationError::InvalidEmail => {
-                (StatusCode::BAD_REQUEST, "Inavlid email format".to_string())
+                (StatusCode::BAD_REQUEST, "Invalid email format".to_string())
             }
             ValidationError::NameTooShort => (
                 StatusCode::BAD_REQUEST,
@@ -225,9 +225,40 @@ async fn main() {
     });
 
     let router: Router = Router::new()
-        .route("/user/{id}", get(get_user))
-        .route("/user", get(list_users).post(create_user))
+        .route("/users/{id}", get(get_user))
+        .route("/users", get(list_users).post(create_user))
         .route("/headers", get(show_headers))
         .route("/raw", post(raw_body))
+        .route("/users/{id}/update", post(combined_extractors))
+        .route("/optional", get(optional_query))
+        .route("/protected", get(protected_endpoint))
+        .route("/validated", post(create_validated_user))
+        .route("/state", get(with_state))
         .with_state(state);
+
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
+        .await
+        .expect("Failed to bind");
+
+    println!("🚀 Module 03: Extractors Deep Dive");
+    println!("   Server running on http://localhost:3000");
+    println!();
+    println!("📝 Built-in Extractors:");
+    println!("   GET  /users/123          - Path extractor");
+    println!("   GET  /users?page=2       - Query extractor");
+    println!("   POST /users              - Json extractor");
+    println!("   GET  /headers            - Headers extractor");
+    println!();
+    println!("📝 Custom Extractors:");
+    println!("   GET  /protected          - API key (Header: X-API-Key)");
+    println!("   POST /validated          - Validated JSON body");
+    println!();
+    println!("💡 Examples:");
+    println!("   curl http://localhost:3000/users?page=2&limit=5");
+    println!("   curl -H 'X-API-Key: secret123' http://localhost:3000/protected");
+    println!("   curl -X POST -H 'Content-Type: application/json' \\");
+    println!("        -d '{{\"name\":\"John\",\"email\":\"john@example.com\"}}' \\");
+    println!("        http://localhost:3000/validated");
+
+    axum::serve(listener, router).await.expect("Server failed");
 }
