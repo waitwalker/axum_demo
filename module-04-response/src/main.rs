@@ -179,6 +179,21 @@ async fn full_response() -> (StatusCode, HeaderMap, &'static str) {
     (StatusCode::OK,headers, "Full control over the response!")
 }
 
+// 永久重定向
+async fn redirect_permanent() -> Redirect {
+    Redirect::permanent("/new-location")
+}
+
+// 临时重定向
+async fn redirect_temporary() -> Redirect {
+    Redirect::temporary("/temp-location")
+}
+
+// 重定向到其他
+async fn redirect_see_other() -> Redirect {
+    Redirect::to("/success")
+}
+
 fn main() {
     println!("Hello, world!");
 }
