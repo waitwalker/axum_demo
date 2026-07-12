@@ -75,16 +75,20 @@ async fn json_users() -> Json<UsersResponse> {
 
 // 带自定义状态码的 JSON
 async fn json_with_status() -> (StatusCode, Json<User>) {
-    (StatusCode::CREATED,Json(User{
-        id: 3,
-        name: "New User".to_string(),
-        email:"new@example.com".to_string(),
-        active:true,
-    }))
+    (
+        StatusCode::CREATED,
+        Json(User {
+            id: 3,
+            name: "New User".to_string(),
+            email: "new@example.com".to_string(),
+            active: true,
+        }),
+    )
 }
 
 async fn html_page() -> Html<&'static str> {
-    Html(r#"
+    Html(
+        r#"
     <!DOCTYPE html>
         <html>
         <head>
@@ -116,7 +120,63 @@ async fn html_page() -> Html<&'static str> {
             </div>
         </body>
         </html>
-    "#)
+    "#,
+    )
+}
+
+async fn dynamic_html() -> Html<String> {
+    let items = vec!["Routing", "Extractors", "Response", "Middleware"];
+    let list_items: String = items
+        .iter()
+        .map(|item| format!("<li>{}</li>", item))
+        .collect();
+
+    Html(format!(
+        r#"<!DOCTYPE html>
+        <html>
+        <head>
+            <title>Axum Course Modules</title>
+            <style>
+                body {{ font-family: system-ui; padding: 20px; }}
+                ul {{ list-style-type: none; padding: 0; }}
+                li {{ 
+                    padding: 10px 15px;
+                    margin: 5px 0;
+                    background: #f0f0f0;
+                    border-radius: 5px;
+                }}
+            </style>
+        </head>
+        <body>
+            <h1>Course Topics</h1>
+            <ul>{}</ul>
+        </body>
+        </html>"#,
+        list_items
+    ))
+}
+
+// 带响应头的自定义响应
+async fn with_headers() -> (HeaderMap, &'static str) {
+    let mut headers = HeaderMap::new();
+    headers.insert(
+        header::CONTENT_TYPE,
+        HeaderValue::from_static("text/plain; character=utf-8"),
+    );
+    headers.insert(
+        header::CACHE_CONTROL,
+        HeaderValue::from_static("max-age=3600"),
+    );
+    headers.insert("X-Custom-Header", HeaderValue::from_static("Hello"));
+    (headers, "Response with custom headers")
+}
+
+// 状态码 + 响应头 + 响应体
+async fn full_response() -> (StatusCode, HeaderMap, &'static str) {
+    let mut headers = HeaderMap::new();
+    headers.insert(header::CONTENT_TYPE,HeaderValue::from_static("text/plain"));
+    headers.insert("X-Request-Id", HeaderValue::from_static("12345"));
+    (StatusCode::OK,headers, "Full control over the response!")
 }
 
 fn main() {
