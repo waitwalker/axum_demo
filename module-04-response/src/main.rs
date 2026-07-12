@@ -280,6 +280,17 @@ async fn maybe_error() -> Result<Json<User>, (StatusCode, String)> {
     }
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     println!("Hello, world!");
+
+    let _app = Router::<()>::new()
+        // 简单响应
+        .route("/string", get(static_string))
+        .route("/owned", get(owned_string))
+        .route("/status", get(with_status))
+        // JSON 响应
+        .route("/json/user", get(json_user))
+        .route("/json/users", get(json_users))
+        .route("/json/created", get(json_with_status));
 }
