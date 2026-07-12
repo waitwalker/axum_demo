@@ -174,9 +174,9 @@ async fn with_headers() -> (HeaderMap, &'static str) {
 // 状态码 + 响应头 + 响应体
 async fn full_response() -> (StatusCode, HeaderMap, &'static str) {
     let mut headers = HeaderMap::new();
-    headers.insert(header::CONTENT_TYPE,HeaderValue::from_static("text/plain"));
+    headers.insert(header::CONTENT_TYPE, HeaderValue::from_static("text/plain"));
     headers.insert("X-Request-Id", HeaderValue::from_static("12345"));
-    (StatusCode::OK,headers, "Full control over the response!")
+    (StatusCode::OK, headers, "Full control over the response!")
 }
 
 // 永久重定向
@@ -192,6 +192,78 @@ async fn redirect_temporary() -> Redirect {
 // 重定向到其他
 async fn redirect_see_other() -> Redirect {
     Redirect::to("/success")
+}
+
+async fn new_location() -> &'static str {
+    "You've been redirected here!"
+}
+
+// 实现IntoResponse 的自定义响应类型
+struct CustomResponse {
+    message: String,
+    status: StatusCode,
+}
+
+impl IntoResponse for CustomResponse {
+    fn into_response(self) -> Response {
+        let body = format!(
+            r#"{{"message":"{}", "status":{}}}"#,
+            self.message,
+            self.status.as_u16()
+        );
+        Response::builder()
+            .status(self.status)
+            .header(header::CONTENT_TYPE, "application/json")
+            .body(Body::from(body))
+            .unwrap()
+    }
+}
+
+async fn custom_response() -> CustomResponse {
+    CustomResponse {
+        message: "This is a custom response type!".to_owned(),
+        status: StatusCode::OK,
+    }
+}
+
+#[derive(Serialize)]
+struct ApiResponse<T: Serialize> {
+    success: bool,
+    data: Option<T>,
+    error: Option<String>,
+}
+
+impl<T: Serialize> IntoResponse for ApiResponse<T> {
+    fn into_response(self) -> Response {
+        let status = if self.success {
+            StatusCode::OK
+        } else {
+            StatusCode::BAD_REQUEST
+        };
+
+        (status, Json(self)).into_response()
+    }
+}
+
+async fn api_success() -> ApiResponse<User> {
+    ApiResponse {
+        success: true,
+        data: Some(User {
+            id: 1,
+            name: "John".to_owned(),
+            email: "john@example.com".to_owned(),
+            active: true,
+        }),
+        error: None,
+    }
+}
+
+async fn api_error() -> ApiResponse<()> {
+    ApiResponse {
+        success: false,
+        data: None,
+        error: Some("Someting went wrong".to_owned()),
+    }
 }
 
 fn main() {
