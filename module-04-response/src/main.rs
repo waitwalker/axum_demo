@@ -266,6 +266,20 @@ async fn api_error() -> ApiResponse<()> {
     }
 }
 
+async fn maybe_error() -> Result<Json<User>, (StatusCode, String)> {
+    let success = true;
+    if success {
+        Ok(Json(User {
+            id: 1,
+            name: "Success User".to_owned(),
+            email: "success@example.com".to_owned(),
+            active: true,
+        }))
+    } else {
+        Err((StatusCode::NOT_FOUND, "User not found".to_owned()))
+    }
+}
+
 fn main() {
     println!("Hello, world!");
 }
