@@ -284,13 +284,42 @@ async fn maybe_error() -> Result<Json<User>, (StatusCode, String)> {
 async fn main() {
     println!("Hello, world!");
 
-    let _app = Router::<()>::new()
-        // 简单响应
-        .route("/string", get(static_string))
-        .route("/owned", get(owned_string))
-        .route("/status", get(with_status))
-        // JSON 响应
-        .route("/json/user", get(json_user))
-        .route("/json/users", get(json_users))
-        .route("/json/created", get(json_with_status));
+    let app = Router::new()
+    // 简单响应
+    .route("/string", get(static_string))
+    .route("/owned", get(owned_string))
+    .route("/status", get(with_status))
+    // JSON 响应
+    .route("/json/user", get(json_user))
+    .route("/json/users", get(json_users))
+    .route("/json/created", get(json_with_status))
+
+    // Html 响应
+    .route("/html", get(html_page))
+    .route("/html/dynamic",get(dynamic_html))
+
+    //响应头
+    .route("/headers", get(with_headers))
+    .route("/full",get(full_response))
+
+    // 重定向
+    .route("/redirect/permanent", get(redirect_permanent))
+    .route("/redirect/temp",get(redirect_temporary))
+    .route("redirect/other", get(redirect_see_other))
+    .route("/new-location", get(new_location))
+    .route("/temp-location", get(new_location))
+    .route("/success", get(||async {"From submitted successfully!"}))
+
+    // 自定义响应
+    .route("/custom", get(custom_response))
+    .route("/api/success", get(api_success))
+    .route("/api/error", get(api_error))
+
+    // Result 类型
+    .route("/maybe-error", get(maybe_error));
+    
+
+
+
+
 }
