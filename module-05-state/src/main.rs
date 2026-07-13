@@ -108,6 +108,36 @@ async fn delete_todo(
     }
 }
 
+#[derive(Clone)]
+#[allow(dead_code)]
+struct CombinedState {
+    config: Arc<AppConfig>,
+    todos: TodoStore,
+    metrics: Arc<RwLock<Mertics>>,
+}
+
+#[derive(Debug, Default)]
+struct Metrics {
+    request_count: u64,
+    error_count: u64,
+}
+
+// 提取整个状态，或者为了方便使用 From trait
+async fn get_mertics(State(state):State<CombinedState>) -> Json<serde_json::Value> {
+    let metrics = state.metrics.read().upwrap();
+    Json(serde_json::json!({
+        "requests": metrics.request_count,
+        "errors": metrics.error_count,
+        "app_version": state.config.version,
+    }))
+}
+
+async fn increment_request_count(State(state): State<CombinedState>) -> &'static str {
+    let mut metrics = state.metrics.write().unwrap();
+    metrics.request_count += 1
+    "Request counted"
+}
+
 fn main() {
     println!("Hello, world!");
 }
