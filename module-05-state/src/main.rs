@@ -137,6 +137,44 @@ async fn increment_request_count(State(state): State<CombinedState>) -> &'static
     "Request counted"
 }
 
+// 模拟数据库连接池
+// 实际应用中，这应当是 sqlx::PgPool或类似的库
+#[derive(Clone)]
+#[allow(dead_code)]
+struct DbPool {
+    connection_string: String,
+    max_connections: u32,
+}
+
+impl DbPool {
+    fn new(connection_string: &str) -> Self {
+        Self {
+            connection_string: connection_string.to_string(),
+            max_connections: 10,
+        }
+    }
+
+    // 模拟查询
+    async fn query(&self, _sql: &str) -> Result<Vec<String>, String> {
+        // 在真实数据库中 sqlx::query!(...).fetch_all(&self.pool).await
+        Ok(vec!["result1".to_string(),"result2".to_string()])
+    }
+}
+
+// 定义一个简单的查询 handler，使用 State 提取数据库连接池
+async fn handle_db_query(
+    State(db): State<DbPool>,
+    axum::extract::Path(query): axum::extract::Path<String>,
+) -> Result<Json<Vec<String>>, String> {
+    db.query(&query).await
+}
+
+async fn db_query(State(pool): State<DbPool>) -> Json<Vec<String>> {
+    match pool.query("SELECT * FROM users").await {
+        Ok(results) => Json(results),
+        Err(_) => Json(vec![]),
+    }
+}
 
 
 fn main() {
