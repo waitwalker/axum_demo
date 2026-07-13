@@ -317,6 +317,28 @@ async fn main() {
 
     // Result 类型
     .route("/maybe-error", get(maybe_error));
+
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
+    .await
+    .expect("Failed to bind");
+
+    println!("🚀 Module 04: Response Types");
+    println!("   Server running on http://localhost:3000");
+    println!();
+    println!("📝 Endpoints:");
+    println!("   GET /string            - Static string");
+    println!("   GET /json/user         - JSON user object");
+    println!("   GET /json/users        - JSON array");
+    println!("   GET /html              - Beautiful HTML page");
+    println!("   GET /headers           - Custom headers");
+    println!("   GET /redirect/permanent - Redirect example");
+    println!("   GET /custom            - Custom IntoResponse");
+    println!("   GET /api/success       - API wrapper success");
+    println!("   GET /api/error         - API wrapper error");
+
+    axum::serve(listener, app)
+    .await
+    .expect("Server failed");
     
 
 
