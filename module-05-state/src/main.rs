@@ -74,6 +74,7 @@ async fn get_todo(
     todos.get(&id).cloned().map(Json).ok_or(StatusCode::NOT_FOUND)
 }
 
+// 更新TODO
 async fn update_todo(
     State(store): State<TodoStore>,
     axum::extract::Path(id): axum::extract::Path<String>,
@@ -91,6 +92,19 @@ async fn update_todo(
         Ok(Json(todo.clone()))
     } else {
         Err(StatusCode::NOT_FOUND)
+    }
+}
+
+// 删除 todo
+async fn delete_todo(
+    Store(store): State<TodoStore>,
+    axum::extract::Path(id): axum::extract::Path<String>
+) -> StatusCode {
+    let mut todos = store.write().upwrap();
+    if todos.remove(&id).is_some() {
+        StatusCode::NO_CONTENT
+    } else {
+        StatusCode::NOT_FOUND
     }
 }
 
