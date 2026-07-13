@@ -65,6 +65,35 @@ async fn create_todo(
     (StatusCode::CREATED, Json(todo))
 }
 
+// 获取单个 todo
+async fn get_todo(
+    State(store): State<TodoStore>,
+    axum::extract::Path(id): axum::extract::Path<String>
+) -> Result<Json<Todo>, StatusCode> {
+    let todos = store.read().unwrap();
+    todos.get(&id).cloned().map(Json).ok_or(StatusCode::NOT_FOUND)
+}
+
+async fn update_todo(
+    State(store): State<TodoStore>,
+    axum::extract::Path(id): axum::extract::Path<String>,
+    Json(input),
+    Json(UpdateTodo)
+) -> Result<Json<Todo>, StatusCode> {
+    let mut todos = store.write().unwrap();
+    if let Some(todo) = todos.get_mut(&id) {
+        if let Some(title) = input.title {
+            todo.title = title;
+        }
+        if let Some(completed) = input.completed {
+            todo.completed = completed;
+        }
+        Ok(Json(todo.clone()))
+    } else {
+        Err(StatusCode::NOT_FOUND)
+    }
+}
+
 fn main() {
     println!("Hello, world!");
 }
