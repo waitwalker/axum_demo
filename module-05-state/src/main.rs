@@ -78,8 +78,7 @@ async fn get_todo(
 async fn update_todo(
     State(store): State<TodoStore>,
     axum::extract::Path(id): axum::extract::Path<String>,
-    Json(input),
-    Json(UpdateTodo)
+    Json(input): Json<UpdateTodo>,
 ) -> Result<Json<Todo>, StatusCode> {
     let mut todos = store.write().unwrap();
     if let Some(todo) = todos.get_mut(&id) {
@@ -97,10 +96,10 @@ async fn update_todo(
 
 // 删除 todo
 async fn delete_todo(
-    Store(store): State<TodoStore>,
+    State(store): State<TodoStore>,
     axum::extract::Path(id): axum::extract::Path<String>
 ) -> StatusCode {
-    let mut todos = store.write().upwrap();
+    let mut todos = store.write().unwrap();
     if todos.remove(&id).is_some() {
         StatusCode::NO_CONTENT
     } else {
@@ -117,14 +116,14 @@ struct CombinedState {
 }
 
 #[derive(Debug, Default)]
-struct Metrics {
+struct Mertics {
     request_count: u64,
     error_count: u64,
 }
 
 // 提取整个状态，或者为了方便使用 From trait
 async fn get_mertics(State(state):State<CombinedState>) -> Json<serde_json::Value> {
-    let metrics = state.metrics.read().upwrap();
+    let metrics = state.metrics.read().unwrap();
     Json(serde_json::json!({
         "requests": metrics.request_count,
         "errors": metrics.error_count,
@@ -134,9 +133,11 @@ async fn get_mertics(State(state):State<CombinedState>) -> Json<serde_json::Valu
 
 async fn increment_request_count(State(state): State<CombinedState>) -> &'static str {
     let mut metrics = state.metrics.write().unwrap();
-    metrics.request_count += 1
+    metrics.request_count += 1;
     "Request counted"
 }
+
+
 
 fn main() {
     println!("Hello, world!");
