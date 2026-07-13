@@ -305,7 +305,7 @@ async fn main() {
     // 重定向
     .route("/redirect/permanent", get(redirect_permanent))
     .route("/redirect/temp",get(redirect_temporary))
-    .route("redirect/other", get(redirect_see_other))
+    .route("/redirect/other", get(redirect_see_other))
     .route("/new-location", get(new_location))
     .route("/temp-location", get(new_location))
     .route("/success", get(||async {"From submitted successfully!"}))
