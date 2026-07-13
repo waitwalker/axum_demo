@@ -6,6 +6,7 @@ members = [
     "module-02-routing",
     "module-03-extractors",
     "module-04-response",
+    "module-05-state",
 ]
 
 # Shared dependencies across all modules
@@ -23,3 +24,6 @@ tokio = { version = "1.42", features = ["full"] }
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+
+# Utilities
+uuid = { version = "1.11", features = ["v4", "serde"] }
