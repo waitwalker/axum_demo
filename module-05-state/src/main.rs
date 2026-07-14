@@ -175,8 +175,117 @@ async fn db_query(State(pool): State<DbPool>) -> Json<Vec<String>> {
         Err(_) => Json(vec![]),
     }
 }
+use axum::Extension;
+#[derive(Clone)]
+struct CurrentUser {
+    id: String,
+    name: String,
+}
+
+async fn get_current_user(Extension(user):Extension<CurrentUser>) -> Json<serde_json::Value> {
+    Json(serde_json::json!({
+        "id": user.id,
+        "name": user.name,
+    }))
+}
 
 
-fn main() {
+#[tokio::main]
+async fn main() {
     println!("Hello, world!");
+    // 初始化不可变配置
+    let config = Arc::new(APpConfig{
+        app_name: "Axum Todo API".to_string(),
+        version: "1.0.0".to_string(),
+        max_items_per_page: 100,
+    });
+
+    // 初始化可变 todo 存储
+    let todo_store:TodoStore = Arc::new(RwLock::new(HashMap::new()));
+
+    // 预先填充一些 todo 
+    {
+        let mut store = todo_store.write().unwrap();
+        let todo = Todo {
+            id: Uuid::new_v4().to_string(),
+            title: "Learn Axum".to_string(),
+            completed: false,
+        };
+        store.insert(todo.id.clone(), todo);
+    }
+
+    // 用于复杂应用的组合状态
+    let combined_state = CombinedState {
+        config: config.clone(),
+        todos: todo_store.clone(),
+        metrics: Arc::new(RwLock::new(Mertics::default())),
+    };
+
+    // 模拟数据库连接池
+    let db_pool = DbPool::new("postgres://localhost/myapp");
+
+    // 当前用户（通常由认证中间件设置）
+    let current_user = CurrentUser {
+        id: "user-123".to_string(),
+        name: "Demo User".to_string(),
+    };
+
+    // 构建 todo CRUD 路由
+    let todo_routes = Router::new()
+    .route("/",get(list_todos).post(create_todo))
+    .route("/{id}", get(get_todo).put(update_todo).delete(delete_todo))
+    .with_state(todo_store);
+
+    // 构建主应用
+    let app = Router::new()
+    // 配置端点
+    .route("/config", get(get_config))
+    .with_state(config)
+
+    // 合并路由
+    .merge(Router::new().nest("/todos", todo_routes))
+    
+    //指标端点
+    .route("/metrics", get(get_mertics))
+    .route("/track", get(increment_request_count))
+    .with_state(combined_state)
+
+    // 数据库端点
+    .route("/db/users", get(db_query))
+    .with_state(db_pool)
+
+    // 基于Extension的状态
+    .route("/me", get(get_current_user))
+    .layer(Extension(current_user));
+
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
+    .await
+    .expect("Failed to bind");
+
+    println!("🚀 Module 05: State Management");
+    println!("   Server running on http://localhost:3000");
+    println!();
+    println!("📝 Todo CRUD Endpoints:");
+    println!("   GET    /todos      - List all todos");
+    println!("   POST   /todos      - Create todo");
+    println!("   GET    /todos/:id  - Get single todo");
+    println!("   PUT    /todos/:id  - Update todo");
+    println!("   DELETE /todos/:id  - Delete todo");
+    println!();
+    println!("📝 Other Endpoints:");
+    println!("   GET /config   - App configuration");
+    println!("   GET /metrics  - Request metrics");
+    println!("   GET /me       - Current user (Extension)");
+    println!();
+    println!("💡 Try: curl -X POST -H 'Content-Type: application/json' \\");
+    println!("        -d '{{\"title\":\"New Todo\"}}' http://localhost:3000/todos");
+
+    axum::serve(listener, app)
+    .await()
+    .expect("Server failed");
+
+
+
+
+
 }
