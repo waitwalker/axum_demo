@@ -285,42 +285,37 @@ async fn main() {
     println!("Hello, world!");
 
     let app = Router::new()
-    // 简单响应
-    .route("/string", get(static_string))
-    .route("/owned", get(owned_string))
-    .route("/status", get(with_status))
-    // JSON 响应
-    .route("/json/user", get(json_user))
-    .route("/json/users", get(json_users))
-    .route("/json/created", get(json_with_status))
-
-    // Html 响应
-    .route("/html", get(html_page))
-    .route("/html/dynamic",get(dynamic_html))
-
-    //响应头
-    .route("/headers", get(with_headers))
-    .route("/full",get(full_response))
-
-    // 重定向
-    .route("/redirect/permanent", get(redirect_permanent))
-    .route("/redirect/temp",get(redirect_temporary))
-    .route("/redirect/other", get(redirect_see_other))
-    .route("/new-location", get(new_location))
-    .route("/temp-location", get(new_location))
-    .route("/success", get(||async {"From submitted successfully!"}))
-
-    // 自定义响应
-    .route("/custom", get(custom_response))
-    .route("/api/success", get(api_success))
-    .route("/api/error", get(api_error))
-
-    // Result 类型
-    .route("/maybe-error", get(maybe_error));
+        // 简单响应
+        .route("/string", get(static_string))
+        .route("/owned", get(owned_string))
+        .route("/status", get(with_status))
+        // JSON 响应
+        .route("/json/user", get(json_user))
+        .route("/json/users", get(json_users))
+        .route("/json/created", get(json_with_status))
+        // Html 响应
+        .route("/html", get(html_page))
+        .route("/html/dynamic", get(dynamic_html))
+        //响应头
+        .route("/headers", get(with_headers))
+        .route("/full", get(full_response))
+        // 重定向
+        .route("/redirect/permanent", get(redirect_permanent))
+        .route("/redirect/temp", get(redirect_temporary))
+        .route("/redirect/other", get(redirect_see_other))
+        .route("/new-location", get(new_location))
+        .route("/temp-location", get(new_location))
+        .route("/success", get(|| async { "From submitted successfully!" }))
+        // 自定义响应
+        .route("/custom", get(custom_response))
+        .route("/api/success", get(api_success))
+        .route("/api/error", get(api_error))
+        // Result 类型
+        .route("/maybe-error", get(maybe_error));
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
-    .await
-    .expect("Failed to bind");
+        .await
+        .expect("Failed to bind");
 
     println!("🚀 Module 04: Response Types");
     println!("   Server running on http://localhost:3000");
@@ -336,12 +331,5 @@ async fn main() {
     println!("   GET /api/success       - API wrapper success");
     println!("   GET /api/error         - API wrapper error");
 
-    axum::serve(listener, app)
-    .await
-    .expect("Server failed");
-    
-
-
-
-
+    axum::serve(listener, app).await.expect("Server failed");
 }

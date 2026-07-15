@@ -1,6 +1,9 @@
-use axum::{ extract::State, http::StatusCode, routing::get, Json, Router };
-use serde::{ Deserialize, Serialize };
-use std::{ collections::HashMap, sync::{ Arc, RwLock } };
+use axum::{Json, Router, extract::State, http::StatusCode, routing::get};
+use serde::{Deserialize, Serialize};
+use std::{
+    collections::HashMap,
+    sync::{Arc, RwLock},
+};
 
 use uuid::Uuid;
 
@@ -13,13 +16,11 @@ struct AppConfig {
 }
 
 async fn get_config(State(config): State<Arc<AppConfig>>) -> Json<serde_json::Value> {
-    Json(
-        serde_json::json!({
+    Json(serde_json::json!({
         "app_name": config.app_name,
         "version": config.version,
         "max_items": config.max_items_per_page,
-    })
-    )
+    }))
 }
 
 // 使用 RwLock 以获得更好的读取性能（多读少写场景）
@@ -53,7 +54,7 @@ async fn list_todos(State(store): State<TodoStore>) -> Json<Vec<Todo>> {
 
 async fn create_todo(
     State(store): State<TodoStore>,
-    Json(input): Json<CreateTodo>
+    Json(input): Json<CreateTodo>,
 ) -> (StatusCode, Json<Todo>) {
     let todo = Todo {
         id: Uuid::new_v4().to_string(),
@@ -68,10 +69,14 @@ async fn create_todo(
 // 获取单个 todo
 async fn get_todo(
     State(store): State<TodoStore>,
-    axum::extract::Path(id): axum::extract::Path<String>
+    axum::extract::Path(id): axum::extract::Path<String>,
 ) -> Result<Json<Todo>, StatusCode> {
     let todos = store.read().unwrap();
-    todos.get(&id).cloned().map(Json).ok_or(StatusCode::NOT_FOUND)
+    todos
+        .get(&id)
+        .cloned()
+        .map(Json)
+        .ok_or(StatusCode::NOT_FOUND)
 }
 
 // 更新TODO
@@ -97,7 +102,7 @@ async fn update_todo(
 // 删除 todo
 async fn delete_todo(
     State(store): State<TodoStore>,
-    axum::extract::Path(id): axum::extract::Path<String>
+    axum::extract::Path(id): axum::extract::Path<String>,
 ) -> StatusCode {
     let mut todos = store.write().unwrap();
     if todos.remove(&id).is_some() {
@@ -122,7 +127,7 @@ struct Mertics {
 }
 
 // 提取整个状态，或者为了方便使用 From trait
-async fn get_mertics(State(state):State<CombinedState>) -> Json<serde_json::Value> {
+async fn get_mertics(State(state): State<CombinedState>) -> Json<serde_json::Value> {
     let metrics = state.metrics.read().unwrap();
     Json(serde_json::json!({
         "requests": metrics.request_count,
@@ -157,16 +162,8 @@ impl DbPool {
     // 模拟查询
     async fn query(&self, _sql: &str) -> Result<Vec<String>, String> {
         // 在真实数据库中 sqlx::query!(...).fetch_all(&self.pool).await
-        Ok(vec!["result1".to_string(),"result2".to_string()])
+        Ok(vec!["result1".to_string(), "result2".to_string()])
     }
-}
-
-// 定义一个简单的查询 handler，使用 State 提取数据库连接池
-async fn handle_db_query(
-    State(db): State<DbPool>,
-    axum::extract::Path(query): axum::extract::Path<String>,
-) -> Result<Json<Vec<String>>, String> {
-    db.query(&query).await
 }
 
 async fn db_query(State(pool): State<DbPool>) -> Json<Vec<String>> {
@@ -182,28 +179,27 @@ struct CurrentUser {
     name: String,
 }
 
-async fn get_current_user(Extension(user):Extension<CurrentUser>) -> Json<serde_json::Value> {
+async fn get_current_user(Extension(user): Extension<CurrentUser>) -> Json<serde_json::Value> {
     Json(serde_json::json!({
         "id": user.id,
         "name": user.name,
     }))
 }
 
-
 #[tokio::main]
 async fn main() {
     println!("Hello, world!");
     // 初始化不可变配置
-    let config = Arc::new(APpConfig{
+    let config = Arc::new(AppConfig {
         app_name: "Axum Todo API".to_string(),
         version: "1.0.0".to_string(),
         max_items_per_page: 100,
     });
 
     // 初始化可变 todo 存储
-    let todo_store:TodoStore = Arc::new(RwLock::new(HashMap::new()));
+    let todo_store: TodoStore = Arc::new(RwLock::new(HashMap::new()));
 
-    // 预先填充一些 todo 
+    // 预先填充一些 todo
     {
         let mut store = todo_store.write().unwrap();
         let todo = Todo {
@@ -232,35 +228,31 @@ async fn main() {
 
     // 构建 todo CRUD 路由
     let todo_routes = Router::new()
-    .route("/",get(list_todos).post(create_todo))
-    .route("/{id}", get(get_todo).put(update_todo).delete(delete_todo))
-    .with_state(todo_store);
+        .route("/", get(list_todos).post(create_todo))
+        .route("/{id}", get(get_todo).put(update_todo).delete(delete_todo))
+        .with_state(todo_store);
 
     // 构建主应用
     let app = Router::new()
-    // 配置端点
-    .route("/config", get(get_config))
-    .with_state(config)
-
-    // 合并路由
-    .merge(Router::new().nest("/todos", todo_routes))
-    
-    //指标端点
-    .route("/metrics", get(get_mertics))
-    .route("/track", get(increment_request_count))
-    .with_state(combined_state)
-
-    // 数据库端点
-    .route("/db/users", get(db_query))
-    .with_state(db_pool)
-
-    // 基于Extension的状态
-    .route("/me", get(get_current_user))
-    .layer(Extension(current_user));
+        // 配置端点
+        .route("/config", get(get_config))
+        .with_state(config)
+        // 合并路由
+        .merge(Router::new().nest("/todos", todo_routes))
+        //指标端点
+        .route("/metrics", get(get_mertics))
+        .route("/track", get(increment_request_count))
+        .with_state(combined_state)
+        // 数据库端点
+        .route("/db/users", get(db_query))
+        .with_state(db_pool)
+        // 基于Extension的状态
+        .route("/me", get(get_current_user))
+        .layer(Extension(current_user));
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
-    .await
-    .expect("Failed to bind");
+        .await
+        .expect("Failed to bind");
 
     println!("🚀 Module 05: State Management");
     println!("   Server running on http://localhost:3000");
@@ -280,12 +272,5 @@ async fn main() {
     println!("💡 Try: curl -X POST -H 'Content-Type: application/json' \\");
     println!("        -d '{{\"title\":\"New Todo\"}}' http://localhost:3000/todos");
 
-    axum::serve(listener, app)
-    .await()
-    .expect("Server failed");
-
-
-
-
-
+    axum::serve(listener, app).await.expect("Server failed");
 }

@@ -124,40 +124,52 @@ fn api_v2_routes() -> Router {
 }
 
 async fn not_found() -> (axum::http::StatusCode, &'static str) {
-    (axum::http::StatusCode::NOT_FOUND,"404 - Route not found")
+    (axum::http::StatusCode::NOT_FOUND, "404 - Route not found")
 }
 #[tokio::main]
 async fn main() {
     let router = Router::new()
-    .route("/", get(|| async {"Welcome to the Routing Module!"}))
-    .route("/resource", get(|| async {"GET - Read resource"}))
-    .route("/resource", post(|| async {"POST - Create resource"}))
-    .route("/resource/{id}", get(|Path(id):Path<u64>| async move {format!("GET - Read resource {}", id)}))
-    .route("/resource/{id}", put(|Path(id):Path<u64>| async move {format!("PUT - Full update resource {}", id)}))
-    .route("/resource/{id}", patch(|Path(id):Path<u64>| async move {format!("PATCH - Partial update resource {}", id)}))
-    .route("/resource/{id}", delete(|Path(id):Path<u64>| async move {format!("DELETE - Remove resource {}", id)}))
-
-    // 路径参数
-    .route("/users/{id}/posts/{post_id}", get(get_user_post))
-    .route("/users/{user_id}/posts/{post_id}/comments/{comment_id}", get(get_comment))
-
-    // 通配符
-    .route("/files/{*path}", get(files))
-
-    // Query 参数
-    .route("/items", get(list_items))
-    .route("/search", get(search))
-
-    // 嵌套路由器
-    .nest("/api/v1", api_v1_routes())
-    .nest("/api/v2", api_v2_routes())
-
-    // 未找到路由，回退处理
-    .fallback(not_found);
+        .route("/", get(|| async { "Welcome to the Routing Module!" }))
+        .route("/resource", get(|| async { "GET - Read resource" }))
+        .route("/resource", post(|| async { "POST - Create resource" }))
+        .route(
+            "/resource/{id}",
+            get(|Path(id): Path<u64>| async move { format!("GET - Read resource {}", id) }),
+        )
+        .route(
+            "/resource/{id}",
+            put(|Path(id): Path<u64>| async move { format!("PUT - Full update resource {}", id) }),
+        )
+        .route(
+            "/resource/{id}",
+            patch(|Path(id): Path<u64>| async move {
+                format!("PATCH - Partial update resource {}", id)
+            }),
+        )
+        .route(
+            "/resource/{id}",
+            delete(|Path(id): Path<u64>| async move { format!("DELETE - Remove resource {}", id) }),
+        )
+        // 路径参数
+        .route("/users/{id}/posts/{post_id}", get(get_user_post))
+        .route(
+            "/users/{user_id}/posts/{post_id}/comments/{comment_id}",
+            get(get_comment),
+        )
+        // 通配符
+        .route("/files/{*path}", get(files))
+        // Query 参数
+        .route("/items", get(list_items))
+        .route("/search", get(search))
+        // 嵌套路由器
+        .nest("/api/v1", api_v1_routes())
+        .nest("/api/v2", api_v2_routes())
+        // 未找到路由，回退处理
+        .fallback(not_found);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
-    .await
-    .expect("Failed to bind to port 3000");
+        .await
+        .expect("Failed to bind to port 3000");
 
     println!("🚀 Module 02: Routing Deep Dive");
     println!("   Server running on http://localhost:3000");
@@ -179,8 +191,5 @@ async fn main() {
     println!("   POST /api/v1/users");
     println!("   PUT  /api/v1/users/123");
 
-    axum::serve(listener, router)
-    .await
-    .expect("Server failed");
-
+    axum::serve(listener, router).await.expect("Server failed");
 }

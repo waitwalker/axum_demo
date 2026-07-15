@@ -7,6 +7,7 @@ members = [
     "module-03-extractors",
     "module-04-response",
     "module-05-state",
+    "module-06-middleware",
 ]
 
 # Shared dependencies across all modules
@@ -24,6 +25,21 @@ tokio = { version = "1.42", features = ["full"] }
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+
+# Tower Ecosystem
+tower = { version = "0.5", features = ["full"] }
+tower-http = { version = "0.6", features = [
+    "cors",
+    "compression-gzip",
+    "timeout",
+    "trace",
+    "fs",
+    "limit",
+] }
+
+# Logging & Tracing
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 
 # Utilities
 uuid = { version = "1.11", features = ["v4", "serde"] }
