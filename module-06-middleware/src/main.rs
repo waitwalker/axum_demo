@@ -10,9 +10,7 @@ use axum::{
 use std::time::{Duration, Instant};
 use tower::ServiceBuilder;
 use tower_http::{
-    compression::CompressionLayer,
-    cors::{Any, CorsLayer},
-    trace::TraceLayer,
+    classify::GrpcCode::Ok, compression::CompressionLayer, cors::{Any, CorsLayer}, trace::TraceLayer,
 };
 use tracing::Level;
 
@@ -43,6 +41,17 @@ async fn timing_middleware(request: Request, next: Next) -> Response {
     );
 
     response
+}
+
+async fn auth_middleware(request: Request, next: Next) -> Result<Response, StatusCode> {
+    let auth_header = request
+    .headers()
+    .get("X-API-KEY")
+    .and_then(|v| v.to_str().ok());
+    match auth_header {
+        Some("secret-key") => Ok(next.run(request).await),
+        _ => Err(StatusCode::UNAUTHORIZED),
+    }
 }
 
 fn main() {
