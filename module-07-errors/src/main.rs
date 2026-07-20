@@ -1,5 +1,5 @@
 use axum::{
-    extract::path,
+    extract::Path,
     http::StatusCode,
     response::{ IntoResponse, Response },
     routing::get,
@@ -66,6 +66,55 @@ async fn get_user(Path(id): Path<u64>) -> Result<Json<User>, AppError> {
         1 => Ok(Json(User { id: 1, name: "Alice".to_string() })),
         2 => Ok(Json(User { id: 2, name: "Bod".to_string() })),
         _ => Err(AppError::UserNotFound(id))
+    }
+}
+
+async fn avlidate_input(Path(value): Path<String>) -> Result<String, AppError> {
+    if value.len() < 3 {
+        return Err(AppError::InvalidInput("Value must be at least 3 characters".to_string()));
+    }
+    Ok(format!("Valid input: {}", value))
+}
+
+async fn protected_resource() -> Result<&'static str, AppError> {
+    // 模拟认证
+    let is_authenticated = false;
+    if !is_authenticated {
+        return Err(AppError::Unauthorized);
+    }
+    Ok("Secret data!")
+}
+
+async fn database_operation() -> Result<&'static str, AppError> {
+    // 模拟数据库报错
+    Err(AppError::DatabaseError("Connection timeout".to_string()))
+}
+
+// 使用?处理简易的错误
+async fn complex_operation(Path(id):Path<u64>) -> Result<Json<User>, AppError> {
+    let user = find_user(id)?;
+    validate_user(&user)?;
+    Ok(Json(user))
+}
+
+fn find_user(id: u64) -> Result<User, AppError> {
+    if id == 0 {
+        Err(AppError::InvalidInput("ID cannot be zero".to_string()))
+    } else if id > 100 {
+        Err(AppError::UserNotFound(id))
+    } else {
+        Ok(User {
+            id,
+            name: format!("User{}", id)
+        })
+    }
+}
+
+fn validate_user(user: &User) -> Result<(), AppError> {
+    if user.name.is_empty() {
+        Err(AppError::InvalidInput("Name cannot be empty".to_string()))
+    } else {
+        Ok(())
     }
 }
 
