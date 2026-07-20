@@ -107,7 +107,7 @@ async  fn main() {
     dotenvy::dotenv().ok();
 
     let database_url = std::env::var("DATABASE_URL")
-    .unwrap_or_else(|_| "postgres:://postgres:postgres@localhost/axum_course".to_string());
+    .unwrap_or_else(|_| "postgres://postgres:postgres@localhost/axum_course".to_string());
 
     let pool = PgPoolOptions::new()
     .max_connections(5)
@@ -116,13 +116,12 @@ async  fn main() {
     .expect("Failed to connect to database");
 
     // 迁移
-    sqlx::query!("CREATE TABLE IF NOT EXISTS users (
+    sqlx::query("CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY, 
     name TEXT NOT NULL,
     email TEXT NOT NULL UNIQUE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )",
-    )
+    )",)
     .execute(&pool)
     .await
     .expect("Failed to create table");
