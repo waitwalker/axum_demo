@@ -7,7 +7,7 @@ members = [
     "module-03-extractors",
     "module-04-response",
     "module-05-state",
-    "module-06-middleware", "module-07-errors", "module-08-database",
+    "module-06-middleware", "module-07-errors", "module-08-database", "module-09-auth",
 ]
 
 # Shared dependencies across all modules
