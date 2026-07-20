@@ -101,6 +101,39 @@ async fn delete_user(State(pool):State<PgPool>, Path(id):Path<Uuid>,) -> Result<
 }
 
 
-fn main() {
+#[tokio::main]
+async  fn main() {
     println!("Hello, world!");
+    dotenvy::dotenv().ok();
+
+    let database_url = std::env::var("DATABASE_URL")
+    .unwrap_or_else(|_| "postgres:://postgres:postgres@localhost/axum_course".to_string());
+
+    let pool = PgPoolOptions::new()
+    .max_connections(5)
+    .connect(&database_url)
+    .await
+    .expect("Failed to connect to database");
+
+    // 迁移
+    sqlx::query!("CREATE TABLE IF NOT EXISTS users (
+    id UUID PRIMARY KEY, 
+    name TEXT NOT NULL,
+    email TEXT NOT NULL UNIQUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )",
+    )
+    .execute(&pool)
+    .await
+    .expect("Failed to create table");
+
+    let app = Router::new()
+    .route("/users", get(list_users).post(create_user))
+    .route("/users/{id}", get(get_user).put(update_user).delete(delete_user))
+    .with_state(pool);
+
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.expect("bind failed");
+
+    axum::serve(listener, app).await.expect("Server failed");
+
 }
