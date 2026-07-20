@@ -69,7 +69,7 @@ async fn get_user(Path(id): Path<u64>) -> Result<Json<User>, AppError> {
     }
 }
 
-async fn avlidate_input(Path(value): Path<String>) -> Result<String, AppError> {
+async fn validate_input(Path(value): Path<String>) -> Result<String, AppError> {
     if value.len() < 3 {
         return Err(AppError::InvalidInput("Value must be at least 3 characters".to_string()));
     }
@@ -118,6 +118,25 @@ fn validate_user(user: &User) -> Result<(), AppError> {
     }
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     println!("Hello, world!");
+    let app = Router::new()
+    .route("/users/{id}", get(get_user))
+    .route("/validate/{value}", get(validate_input))
+    .route("/protected", get(protected_resource))
+    .route("/database", get(database_operation))
+    .route("/complex/{id}", get(complex_operation));
+
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.expect("bind failed");
+    println!("🚀 Module 07: Error Handling");
+    println!("   Server: http://localhost:3000\n");
+    println!("📝 Try these endpoints:");
+    println!("   GET /users/1      - Success (user exists)");
+    println!("   GET /users/999    - 404 (user not found)");
+    println!("   GET /validate/ab  - 400 (too short)");
+    println!("   GET /protected    - 401 (unauthorized)");
+    println!("   GET /database     - 500 (database error)");
+
+    axum::serve(listener, app).await.expect("Server failed");
 }
