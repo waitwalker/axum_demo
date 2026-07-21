@@ -91,6 +91,50 @@ fn verify_token(config: &AuthConfig, token: &str) -> Result<Claims, StatusCode> 
     .map_err(|_| StatusCode::UNAUTHORIZED)
 }
 
+// 处理器
+async fn register(Json(input): Json<RegisterRequest>) -> impl IntoResponse {
+    let _hashed = hash_password(&input.password);
+    Json(serde_json::json!({"message":"User registered", "email":&input.email}))
+}
+
+async fn login(State(config):State<Arc<AuthConfig>>, Json(input):Json<LoginRequest>) -> Result<Json<LoginResponse>, StatusCode> {
+    // 模拟用户有效性校验
+    if input.email == "test@example.com" && input.password == "password123" {
+        let token = create_token(&config, "user-1", "user")?;
+        Ok(Json(LoginResponse { token, expires_in: config.jwt_expiry_hours * 3600 }))
+    } else {
+        Err(StatusCode::UNAUTHORIZED)
+    }
+}
+
+async fn protected(axum::Extension(user):axum::Extension<CurrentUser>) -> impl IntoResponse {
+    Json(serde_json::json!({"message":"Access granted", "user_id":user.id, "role":user.role}))
+}
+
+async fn admin_only(axum::Extension(user):axum::Extension<CurrentUser>) -> impl IntoResponse {
+    if user.role != "admin" {
+        return  (StatusCode::FORBIDDEN, "Admin access required").into_response();
+    } 
+    Json(serde_json::json!({"message":"Admin area", "user":user.id})).into_response()
+}
+
+// 中间件
+async fn auth_middleware(State(config):State<Arc<AuthConfig>>, mut request:Request, next: Next) -> Result<Response, StatusCode> {
+    let auth_header = request.headers()
+    .get("Authorization")
+    .and_then(|v| v.to_str().ok())
+    .and_then(|v| v.strip_prefix("Bearer "));
+
+    let token = auth_header.ok_or(StatusCode::UNAUTHORIZED)?;
+    let claims = verify_token(&config, token)?;
+    let user = CurrentUser {
+        id: claims.sub,
+        role: claims.role,
+    };
+    request.extensions_mut().insert(user);
+    Ok(next.run(request).await)
+}
+
 
 fn main() {
     println!("Hello, world!");
