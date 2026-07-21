@@ -11,7 +11,7 @@ use axum::{
 use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
-use std::{fmt::Result, sync::Arc};
+use std::sync::Arc;
 
 // 配置
 #[derive(Clone)]
