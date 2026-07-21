@@ -64,6 +64,7 @@ fn hash_password(password: &str) -> String {
 }
 
 // 校验密码与哈希值
+#[allow(dead_code)]
 fn verify_password(password: &str, hash: &str) -> bool {
     use argon2::{Argon2, PasswordHash, PasswordVerifier};
     let parsed_hash = PasswordHash::new(hash).unwrap();
