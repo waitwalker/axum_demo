@@ -136,6 +136,36 @@ async fn auth_middleware(State(config):State<Arc<AuthConfig>>, mut request:Reque
 }
 
 
-fn main() {
+#[tokio::main]
+async fn main() {
     println!("Hello, world!");
+    let config = Arc::new(AuthConfig {
+        jwt_secret: "super-secret-key-change-in-production".to_string(),
+        jwt_expiry_hours : 24,
+    });
+
+    let protected_routes = Router::new()
+    .route("/me", get(protected))
+    .route("/admin", get(admin_only))
+    .route_layer(middleware::from_fn_with_state(config.clone(), auth_middleware));
+
+    let app = Router::new()
+    .route("/register", post(register))
+    .route("/login", post(login))
+    .nest("/protected", protected_routes)
+    .with_state(config);
+
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.expect("bind failed");
+
+    println!("🚀 Module 09: Authentication");
+    println!("   Server: http://localhost:3000\n");
+    println!("📝 Endpoints:");
+    println!("   POST /register    - Register user");
+    println!("   POST /login       - Login (test@example.com / password123)");
+    println!("   GET  /protected/me - Protected route");
+    println!("\n💡 Usage:");
+    println!("   1. POST /login with credentials");
+    println!("   2. Use token: curl -H 'Authorization: Bearer <token>' /protected/me");
+
+    axum::serve(listener, app).await.expect("Server failed");
 }
