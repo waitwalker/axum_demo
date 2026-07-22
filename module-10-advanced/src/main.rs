@@ -3,7 +3,6 @@
 use axum::{
     Router,
     extract::{ Multipart, ws::{ Message, WebSocket, WebSocketUpgrade } },
-    http::response,
     response::{ Html, IntoResponse, sse::{ Event, KeepAlive, Sse } },
     routing::{ get, post },
 };
@@ -124,6 +123,31 @@ async fn demo_page() -> Html<&'static str> {
     )
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     println!("Hello, world!");
+    std::fs::create_dir_all("static").ok();
+    std::fs::write("static/hello.txt", "Hello form static file!").ok();
+
+    let app = Router::new()
+    .route("/", get(demo_page))
+    .route("/ws", get(ws_handler))
+    .route("/sse", get(sse_handler))
+    .route("/upload", post(upload))
+    .nest_service("/static", ServeDir::new("static"));
+
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.expect("bind failed");
+    println!("🚀 Module 10: Advanced Features");
+    println!("   Server: http://localhost:3000\n");
+    println!("📝 Features:");
+    println!("   GET  /     - Demo page");
+    println!("   WS   /ws   - WebSocket echo");
+    println!("   GET  /sse  - Server-Sent Events");
+    println!("   POST /upload - File upload");
+    println!("   GET  /static/* - Static files");
+
+    axum::serve(listener, app).await.expect("server failed");
+
+
+
 }
