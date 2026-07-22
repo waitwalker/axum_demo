@@ -7,7 +7,7 @@ members = [
     "module-03-extractors",
     "module-04-response",
     "module-05-state",
-    "module-06-middleware", "module-07-errors", "module-08-database", "module-09-auth", "module-10-advanced",
+    "module-06-middleware", "module-07-errors", "module-08-database", "module-09-auth", "module-10-advanced", "module-11-testing",
 ]
 
 # Shared dependencies across all modules
@@ -57,3 +57,7 @@ uuid = { version = "1.11", features = ["v4", "serde"] }
 chrono = {version = "0.4", features = ["serde"]}
 dotenvy = "0.15"
 futures = "0.3"
+
+# testing
+tower-service = "0.3"
+http-body-util = "0.1"

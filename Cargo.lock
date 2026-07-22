@@ -1252,6 +1252,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "module-11-testing"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "http-body-util",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tower",
+ "tower-service",
+]
+
+[[package]]
 name = "multer"
 version = "3.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
