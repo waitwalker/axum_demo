@@ -48,7 +48,7 @@ async fn create_user(
     Json(input): Json<CreateUser>,
 ) -> (StatusCode, Json<User>) {
     let mut users = store.write().unwrap();
-    let id = users.len() as u64 + 1;
+    let id = (users.len() as u64) + 1;
     let user = User {
         id,
         name: input.name,
@@ -67,6 +67,37 @@ fn create_app(store: UserStore) -> Router {
         .route("/users", get(list_users).post(create_user))
         .route("/users/{id}", get(get_user))
         .with_state(store)
+}
+
+// 测试代码
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::{body::Body, http::Request};
+    use http_body_util::BodyExt;
+    use tower::ServiceExt;
+
+    fn test_store() -> UserStore {
+        Arc::new(RwLock::new(HashMap::new()))
+    }
+
+    #[tokio::test]
+    async fn test_health_check() {
+        let app = create_app(test_store());
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/health")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response.into_body().collect().await.unwrap().to_bytes();
+        assert_eq!(&body[..], b"OK");
+    }
 }
 
 fn main() {
