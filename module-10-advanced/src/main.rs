@@ -1,14 +1,14 @@
 // 高级特性
 // WebSockets, SSE, File uploads, Static files
 use axum::{
-    Router, extract::{
-        Multipart, ws::{Message, WebSocket, WebSocketUpgrade},
-    }, http::response, response::{
-        Html, IntoResponse, sse::{Event, KeepAlive, Sse},
-    }, routing::{get, post},
+    Router,
+    extract::{ Multipart, ws::{ Message, WebSocket, WebSocketUpgrade } },
+    http::response,
+    response::{ Html, IntoResponse, sse::{ Event, KeepAlive, Sse } },
+    routing::{ get, post },
 };
-use futures::stream::{self, Stream};
-use std::{convert::Infallible, time::Duration};
+use futures::stream::{ self, Stream };
+use std::{ convert::Infallible, time::Duration };
 use tokio_stream::StreamExt;
 use tower_http::services::ServeDir;
 
@@ -18,7 +18,7 @@ async fn ws_handler(ws: WebSocketUpgrade) -> impl IntoResponse {
 }
 
 async fn handle_socket(mut socket: WebSocket) {
-    while let Some(msg) = socket.recv().await { 
+    while let Some(msg) = socket.recv().await {
         if let Ok(Message::Text(text)) = msg {
             let response = format!("Echo: {}", text);
             if socket.send(Message::Text(response.into())).await.is_err() {
@@ -30,11 +30,12 @@ async fn handle_socket(mut socket: WebSocket) {
 
 // 服务器发送事件SSE
 async fn sse_handler() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
-    let stream = stream::repeat_with(||{
-        Event::default().data(format!("Server time: {:?}", std::time::SystemTime::now()))
-    })
-    .map(Ok)
-    .throttle(Duration::from_secs(1));
+    let stream = stream
+        ::repeat_with(|| {
+            Event::default().data(format!("Server time: {:?}", std::time::SystemTime::now()))
+        })
+        .map(Ok)
+        .throttle(Duration::from_secs(1));
 
     Sse::new(stream).keep_alive(KeepAlive::default())
 }
@@ -55,6 +56,73 @@ async fn upload(mut multipart: Multipart) -> impl IntoResponse {
     }
 }
 
+// HTML 演示页面
+async fn demo_page() -> Html<&'static str> {
+    Html(
+        r#"
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Axum Advanced Features</title>
+    <style>
+        body { font-family: system-ui; max-width: 800px; margin: 50px auto; padding: 20px; }
+        .demo { background: #f5f5f5; padding: 20px; margin: 20px 0; border-radius: 8px; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        #ws-output, #sse-output { height: 100px; overflow-y: auto; background: #fff; 
+                                   border: 1px solid #ddd; padding: 10px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <h1>🚀 Axum Advanced Features</h1>
+    
+    <div class="demo">
+        <h2>WebSocket Echo</h2>
+        <input type="text" id="ws-input" placeholder="Type message">
+        <button onclick="sendWs()">Send</button>
+        <div id="ws-output"></div>
+    </div>
+    
+    <div class="demo">
+        <h2>Server-Sent Events</h2>
+        <button onclick="startSse()">Start SSE</button>
+        <button onclick="stopSse()">Stop</button>
+        <div id="sse-output"></div>
+    </div>
+    
+    <div class="demo">
+        <h2>File Upload</h2>
+        <form action="/upload" method="post" enctype="multipart/form-data">
+            <input type="file" name="file" multiple>
+            <button type="submit">Upload</button>
+        </form>
+    </div>
+
+    <script>
+        let ws, sse;
+        
+        ws = new WebSocket('ws://localhost:3000/ws');
+        ws.onmessage = (e) => {
+            document.getElementById('ws-output').innerHTML += e.data + '<br>';
+        };
+        
+        function sendWs() {
+            ws.send(document.getElementById('ws-input').value);
+        }
+        
+        function startSse() {
+            sse = new EventSource('/sse');
+            sse.onmessage = (e) => {
+                document.getElementById('sse-output').innerHTML = e.data;
+            };
+        }
+        
+        function stopSse() { if(sse) sse.close(); }
+    </script>
+</body>
+</html>
+"#
+    )
+}
 
 fn main() {
     println!("Hello, world!");
