@@ -8,7 +8,7 @@ use axum::{
     }, routing::{get, post},
 };
 use futures::stream::{self, Stream};
-use std::{convert::Infallible, format, time::Duration};
+use std::{convert::Infallible, time::Duration};
 use tokio_stream::StreamExt;
 use tower_http::services::ServeDir;
 
@@ -28,6 +28,16 @@ async fn handle_socket(mut socket: WebSocket) {
     }
 }
 
+// 服务器发送事件SSE
+async fn sse_handler() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
+    let stream = stream::repeat_with(||{
+        Event::default().data(format!("Server time: {:?}", std::time::SystemTime::now()))
+    })
+    .map(Ok)
+    .throttle(Duration::from_secs(1));
+
+    Sse::new(stream).keep_alive(KeepAlive::default())
+}
 
 
 fn main() {
