@@ -100,6 +100,26 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_create_user() {
+        let app = create_app(test_store());
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/users")
+                    .header("content-type", "application/json")
+                    .body(Body::from(r#"{"name":"Alice"}"#))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::CREATED);
+        let body = response.into_body().collect().await.unwrap().to_bytes();
+        let user: User = serde_json::from_slice(&body).unwrap();
+        assert_eq!(user.name, "Alice");
+    }
+
+    #[tokio::test]
     async fn test_get_user_not_found() {
         let app = create_app(test_store());
         let response = app
