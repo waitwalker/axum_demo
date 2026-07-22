@@ -39,6 +39,22 @@ async fn sse_handler() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     Sse::new(stream).keep_alive(KeepAlive::default())
 }
 
+// 文件上传
+async fn upload(mut multipart: Multipart) -> impl IntoResponse {
+    let mut files = Vec::new();
+    while let Some(field) = multipart.next_field().await.unwrap() {
+        let name = field.name().unwrap_or("unknown").to_string();
+        let data = field.bytes().await.unwrap();
+        files.push(format!("{}: {} bytes", name, data.len()));
+    }
+
+    if files.is_empty() {
+        "No files uploaded".to_string()
+    } else {
+        format!("Uploaded: {}", files.join(","))
+    }
+}
+
 
 fn main() {
     println!("Hello, world!");
