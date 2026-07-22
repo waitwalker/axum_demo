@@ -162,6 +162,23 @@ mod tests {
     }
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     println!("Hello, world!");
+
+    let store = Arc::new(RwLock::new(HashMap::new()));
+    let app = create_app(store);
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
+        .await
+        .expect("bind failed");
+    println!("🚀 Module 11: Testing");
+    println!("   Server: http://localhost:3000\n");
+    println!("📝 Endpoints:");
+    println!("   GET  /health    - Health check");
+    println!("   GET  /users     - List users");
+    println!("   POST /users     - Create user");
+    println!("   GET  /users/:id - Get user\n");
+    println!("🧪 Run tests: cargo test");
+
+    axum::serve(listener, app).await.expect("server failed");
 }
