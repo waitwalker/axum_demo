@@ -98,6 +98,21 @@ mod tests {
         let body = response.into_body().collect().await.unwrap().to_bytes();
         assert_eq!(&body[..], b"OK");
     }
+
+    #[tokio::test]
+    async fn test_get_user_not_found() {
+        let app = create_app(test_store());
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/users/999")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    }
 }
 
 fn main() {
