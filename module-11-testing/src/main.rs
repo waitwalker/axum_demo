@@ -133,6 +133,33 @@ mod tests {
             .unwrap();
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
     }
+
+    #[tokio::test]
+    async fn test_list_users() {
+        let store = test_store();
+        store.write().unwrap().insert(
+            1,
+            User {
+                id: 1,
+                name: "Bob".to_string(),
+            },
+        );
+        let app = create_app(store);
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/users")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response.into_body().collect().await.unwrap().to_bytes();
+        let users: Vec<User> = serde_json::from_slice(&body).unwrap();
+        assert_eq!(users.len(), 1);
+    }
 }
 
 fn main() {
