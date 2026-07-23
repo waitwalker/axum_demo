@@ -40,6 +40,13 @@ async fn ready(
     }
 }
 
+async fn metrics(State(state):State<AppState>) -> Json<serde_json::Value> {
+    Json(serde_json::json!({
+        "requests":state.request_count.load(Ordering::SeqCst),
+        "ready":state.ready.load(Ordering::SeqCst),
+    }))
+}
+
 fn main() {
     println!("Hello, world!");
 }
